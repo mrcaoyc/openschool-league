@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title>开放学校联盟管理系统</title>
+		<link href="css/element-ui/2.2.1/theme-chalk/index.css" rel="stylesheet" />
+	</head>
+	<body>
+		<div id="app" width="100%">
+			<!-- 选择环境 -->
+			<el-form :inline="true" class="demo-form-inline">
+			  <el-form-item label="环境">
+				<el-select v-model="host" placeholder="请选择环境">
+					<el-option v-for="env in environments"
+						:key="env.name"
+						:label="env.name"
+						:value="env.url"
+					></el-option>
+				</select>
+			  </el-form-item>
+			  <el-form-item>
+				<el-button type="primary" @click="getLeagues" >搜索</el-button>
+			  </el-form-item>
+			</el-form>
+			
+			<el-form :inline="true" class="demo-form-inline">
+			  <el-form-item label="名称">
+				<el-input placeholder="名称" v-model="addLeagueData.name" class="input-with-select"></el-input>
+			  </el-form-item>
+			  <el-form-item label="容量">
+				 <el-input-number v-model="addLeagueData.capacity" :min="1"  label="描述文字"></el-input-number>
+			  </el-form-item>
+			  <el-form-item>
+				<el-button type="primary" @click="addLeague" >添加联盟</el-button>
+			  </el-form-item>
+			</el-form>
+			
+			
+			<!--联盟列表-->
+			<template>
+				<el-table :data="leagues" style="width: 100%" :stripe="true" :border="true">
+					<el-table-column prop="leagueId" label="联盟ID" ></el-table-column>
+					<el-table-column prop="name" label="联盟名称"></el-table-column>
+					<el-table-column prop="adminUserId" label="管理员ID"></el-table-column>
+					<el-table-column prop="capacity" label="总容量"></el-table-column>
+					<el-table-column prop="residueCapacity" label="剩余容量"></el-table-column>
+					<el-table-column label="操作">
+					  <template slot-scope="scope">
+						<el-button
+						  size="mini"
+						  @click="showAddSuperAdmin(scope.row)">新增</el-button>
+					  </template>
+					</el-table-column>
+				</el-table>
+			</template>
+			
+			<el-dialog title="设置管理员" :visible.sync="addSuperAdminDialogVisible">
+			  <el-form :model="addSuperAdminData">
+				<el-form-item label="姓名" label-width="80px">
+				  <el-input v-model="addSuperAdminData.name"></el-input>
+				</el-form-item>
+				<el-form-item label="手机" label-width="80px">
+				   <el-input type="text" v-model="addSuperAdminData.phone" maxlength="11" show-word-limit="true"></el-input>
+				</el-form-item>
+			  </el-form>
+			  <div slot="footer" class="dialog-footer">
+				<el-button @click="cancelAddSuperAdmin">取 消</el-button>
+				<el-button type="primary" @click="addSuperAdmin">确 定</el-button>
+			  </div>
+			</el-dialog>
+			
+		</div>
+	</body>
+	<script src="js/vue.js"></script>
+	<script src="js/axios.min.js"></script>
+	<script type="text/javascript" src="js/index.js" ></script>
+	<script src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-1.8.0.js"></script>
+	<script>
+		var app=new Vue({
+			el: '#app',
+			data:{
+				environments:[
+					{
+						name:"开发环境",
+						url:"http://192.168.107.202:8822"
+					},
+					{
+						name:"测试环境",
+						url:"http://192.168.107.203:8822"
+					},
+					{
+						name:"本地环境",
+						url:"http://127.0.0.1:8822"
+					}
+				],
+				host:"",
+				leagues:[],
+				addLeagueData:{
+					name:"",  // 联盟名称
+					capacity:100, // 容量
+				},
+				addSuperAdminDialogVisible:false,
+				addSuperAdminData:{}
+			},
+			watch:{
+				host:function(val){
+					axios.defaults.baseURL=val;
+				}
+			},
+			methods:{
+				getLeagues:function(){
+					let _this=this;
+					if(_this.host==""){
+						_this.$message({
+						  type: 'warning',
+						  message: "请选择环境"
+						});
+						return;
+					}
+					axios.get("/leagues")
+						.then(function(response){
+							_this.leagues=response.data._embedded.leagues;
+							console.log(response.data);
+						}).catch(function (error) {
+							_this.$message({
+								type: 'warning',
+								message: error.message
+							})
+						});
+				},
+				addLeague:function(){
+					let _this=this;
+					let leagueName=this.addLeagueData.name;
+					let capacity=this.addLeagueData.capacity;
+					if(_this.host==""){
+						_this.$message({
+						  type: 'warning',
+						  message: "请选择环境"
+						});
+						return;
+					}
+					if(leagueName.trim()==""){
+						this.warning("联盟名称不能为空！");
+						return;
+					}
+					if(typeof(capacity)=="undefined"){
+						this.warning("联盟容量不能为空！");
+						return;
+					}
+					axios.post("/leagues",_this.addLeagueData)
+					.then(function(response){
+						console.log(response);
+						_this.getLeagues();
+					}).catch(function (error) {
+						_this.$message({
+							type: 'warning',
+							message: error.message
+						})
+					});
+				},
+				showAddSuperAdmin:function(row){
+					this.addSuperAdminData.leagueId=row.leagueId;
+					this.addSuperAdminDialogVisible=true;
+				},
+				cancelAddSuperAdmin:function(){
+					this.addSuperAdminDialogVisible=false;
+					this.addSuperAdminData.leagueId={};
+				},
+				addSuperAdmin:function(){
+					let _this=this;
+					let superAdmin=this.addSuperAdminData;
+					if(this.isEmpty(superAdmin.name)){
+						this.warning("请输入姓名");
+						return;
+					}
+					if(this.isEmpty(superAdmin.phone)){
+						this.warning("请输入手机");
+						return;
+					}
+					if(superAdmin.phone.length!=11){
+						this.warning("手机格式不正确");
+						return;
+					}
+					
+					let leagueId=superAdmin.leagueId;
+					axios.put(`/leagues/${leagueId}/super-admins`,{
+						name:superAdmin.name,
+						phone:superAdmin.phone
+					})
+					.then(function(response){
+						_this.getLeagues();
+						_this.addSuperAdminDialogVisible=false;
+						_this.addSuperAdminData={}
+					}).catch(function (error) {
+						_this.$message({
+							type: 'warning',
+							message: error.message
+						})
+					});
+					
+				},
+				isEmpty:function(property){
+					return typeof(property)=="undefined" || property.trim().length==0
+				},
+				warning:function(mesage){
+					this.$message({
+						type:"warning",
+						message:mesage
+					})
+				}
+			},
+			mounted:function(){
+				
+			}
+		})
+	</script>
+</html>
