@@ -56,6 +56,9 @@
 			
 			<el-dialog title="设置管理员" :visible.sync="addSuperAdminDialogVisible">
 			  <el-form :model="addSuperAdminData">
+				<el-form-item label="联盟" label-width="80px">
+					<el-input v-model="addSuperAdminData.leagueName" :disabled="true"></el-input>
+				</el-form-item>
 				<el-form-item label="姓名" label-width="80px">
 				  <el-input v-model="addSuperAdminData.name"></el-input>
 				</el-form-item>
@@ -160,6 +163,7 @@
 				},
 				showAddSuperAdmin:function(row){
 					this.addSuperAdminData.leagueId=row.leagueId;
+					this.addSuperAdminData.leagueName=row.name;
 					this.addSuperAdminDialogVisible=true;
 				},
 				cancelAddSuperAdmin:function(){
