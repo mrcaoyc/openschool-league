@@ -46,9 +46,8 @@
 					<el-table-column prop="residueCapacity" label="剩余容量"></el-table-column>
 					<el-table-column label="操作">
 					  <template slot-scope="scope">
-						<el-button
-						  size="mini"
-						  @click="showAddSuperAdmin(scope.row)">设置管理员</el-button>
+						<el-button size="mini" @click="showAddSuperAdmin(scope.row)">设置管理员</el-button>
+						<el-button size="mini" @click="showCapacity(scope.row)">修改容量</el-button>
 					  </template>
 					</el-table-column>
 				</el-table>
@@ -57,7 +56,7 @@
 			<el-dialog title="设置管理员" :visible.sync="addSuperAdminDialogVisible">
 			  <el-form :model="addSuperAdminData">
 				<el-form-item label="联盟" label-width="80px">
-					<el-input v-model="addSuperAdminData.leagueName" :disabled="true"></el-input>
+					<el-input v-model="selectLeague.name" :disabled="true"></el-input>
 				</el-form-item>
 				<el-form-item label="姓名" label-width="80px">
 				  <el-input v-model="addSuperAdminData.name"></el-input>
@@ -69,6 +68,21 @@
 			  <div slot="footer" class="dialog-footer">
 				<el-button @click="cancelAddSuperAdmin">取 消</el-button>
 				<el-button type="primary" @click="addSuperAdmin">确 定</el-button>
+			  </div>
+			</el-dialog>
+			
+			<el-dialog title="修改联盟容量" :visible.sync="updateCapacityDialogVisible">
+			  <el-form>
+				<el-form-item label="联盟" label-width="80px">
+					<el-input v-model="selectLeague.name" :disabled="true"></el-input>
+				</el-form-item>
+				<el-form-item label="容量" label-width="80px">
+				 <el-input-number v-model="updateCapacityValue" :min="0"  label="容量"></el-input-number>
+				</el-form-item>
+			  </el-form>
+			  <div slot="footer" class="dialog-footer">
+				<el-button @click="cancelCapacity">取 消</el-button>
+				<el-button type="primary" @click="modifyCapacity">确 定</el-button>
 			  </div>
 			</el-dialog>
 			
@@ -103,7 +117,10 @@
 					capacity:100, // 容量
 				},
 				addSuperAdminDialogVisible:false,
-				addSuperAdminData:{}
+				addSuperAdminData:{},
+				updateCapacityDialogVisible:false,
+				updateCapacityValue:0,
+				selectLeague:{}
 			},
 			watch:{
 				host:function(val){
@@ -154,6 +171,7 @@
 					.then(function(response){
 						console.log(response);
 						_this.getLeagues();
+						_this.success("添加联盟成功！")
 					}).catch(function (error) {
 						_this.$message({
 							type: 'warning',
@@ -162,13 +180,21 @@
 					});
 				},
 				showAddSuperAdmin:function(row){
-					this.addSuperAdminData.leagueId=row.leagueId;
-					this.addSuperAdminData.leagueName=row.name;
+					this.selectLeague=row;
 					this.addSuperAdminDialogVisible=true;
 				},
 				cancelAddSuperAdmin:function(){
 					this.addSuperAdminDialogVisible=false;
-					this.addSuperAdminData.leagueId={};
+					this.selectLeague={};
+				},
+				showCapacity:function(row){
+					this.selectLeague=row;
+					this.updateCapacityValue=row.capacity;
+					this.updateCapacityDialogVisible=true;
+				},
+				cancelCapacity:function(){
+					this.updateCapacityDialogVisible=false;
+					this.addSuperAdminData={};
 				},
 				addSuperAdmin:function(){
 					let _this=this;
@@ -186,7 +212,7 @@
 						return;
 					}
 					
-					let leagueId=superAdmin.leagueId;
+					let leagueId=this.selectLeague.leagueId;
 					axios.put(`/leagues/${leagueId}/super-admins`,{
 						name:superAdmin.name,
 						phone:superAdmin.phone
@@ -195,6 +221,7 @@
 						_this.getLeagues();
 						_this.addSuperAdminDialogVisible=false;
 						_this.addSuperAdminData={}
+						_this.success("添加管理员成功！")
 					}).catch(function (error) {
 						_this.$message({
 							type: 'warning',
@@ -203,12 +230,36 @@
 					});
 					
 				},
+				modifyCapacity:function(){
+					let _this=this;
+					let leagueId=this.selectLeague.leagueId;
+					axios.put(`/leagues/${leagueId}/capacity`,{
+						capacity:_this.updateCapacityValue
+					})
+					.then(function(response){
+						_this.getLeagues();
+						_this.updateCapacityDialogVisible=false;
+						_this.selectLeague={}
+						_this.success("修改容量成功！")
+					}).catch(function (error) {
+						_this.$message({
+							type: 'warning',
+							message: error.response.data.message
+						})
+					});
+				},
 				isEmpty:function(property){
 					return typeof(property)=="undefined" || property.trim().length==0
 				},
 				warning:function(mesage){
 					this.$message({
 						type:"warning",
+						message:mesage
+					})
+				},
+				success:function(mesage){
+					this.$message({
+						type:"success",
 						message:mesage
 					})
 				}
