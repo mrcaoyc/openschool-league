@@ -137,7 +137,11 @@
 						});
 						return;
 					}
-					axios.get("/leagues")
+					axios.get("/leagues",{
+						params:{
+							"size":10000000	
+						}
+					})
 						.then(function(response){
 							_this.leagues=response.data._embedded.leagues;
 							console.log(response.data);
