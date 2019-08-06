@@ -179,7 +179,7 @@
 					}).catch(function (error) {
 						_this.$message({
 							type: 'warning',
-							message: error.message
+							message: error.response.data.message
 						})
 					});
 				},
@@ -227,9 +227,11 @@
 						_this.addSuperAdminData={}
 						_this.success("添加管理员成功！")
 					}).catch(function (error) {
+						debugger;
+						console.log(error)
 						_this.$message({
 							type: 'warning',
-							message: error.message
+							message: error.response.data.message
 						})
 					});
 					
